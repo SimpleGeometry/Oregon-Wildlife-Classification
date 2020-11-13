@@ -12,7 +12,7 @@ function Navigation() {
 					<NavDropdown.Divider />
 					<NavDropdown.Item href="/Construction">Training Visualization</NavDropdown.Item>
 					<NavDropdown.Divider />
-					<NavDropdown.Item href="/Construction">Dataset Embedding</NavDropdown.Item>
+					<NavDropdown.Item href="/dataset-embedding">Dataset Embedding</NavDropdown.Item>
 					<NavDropdown.Divider />
 					<NavDropdown.Item href="/Construction">Activation Map</NavDropdown.Item>
 				</NavDropdown>
