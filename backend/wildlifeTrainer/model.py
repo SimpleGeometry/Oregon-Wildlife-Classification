@@ -40,8 +40,17 @@ class Net(nn.Module):
         x = self.fc3(x)
         return x    
 
-def train_model(net, optimizer, criterion, epochs):
-    minibatches_per_interval = 300
+def resnet_with_untrained_fc():
+    net = models.resnet18(pretrained=True)
+    for param in net.parameters():
+        param.requires_grad = False
+
+    num_features = net.fc.in_features
+    net.fc = nn.Linear(num_features, 20)
+    return net
+
+def train_model(net, optimizer, criterion, scheduler, epochs):
+    minibatches_per_interval = 30
     epochs_per_test_evaluation = 1
 
     try:
@@ -81,6 +90,8 @@ def train_model(net, optimizer, criterion, epochs):
         if (epoch + 1) % epochs_per_test_evaluation == 0:
             testModel.testModel()
 
+        #scheduler.step()
+
     print('Finished Training')
 
 def getClassNames():
@@ -97,14 +108,18 @@ def getTrainAndTestLoaders():
         trainloader = torch.load(trainloader_path)
         testloader = torch.load(testloader_path)
     except:
-        transform = transforms.Compose([transforms.Resize(size=(96,96)) ,transforms.ToTensor()])
+        train_transform = transforms.Compose([transforms.Resize(256), transforms.RandomResizedCrop(224), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+        test_transform = transforms.Compose([transforms.Resize(256), transforms.CenterCrop(224), transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
-        dataset = torchvision.datasets.ImageFolder(root=data_path, transform=transform)
+        #dataset = torchvision.datasets.ImageFolder(root=data_path, transform=train_transform)
+        dataset = torchvision.datasets.ImageFolder(root=data_path)
         num_training = int(len(dataset) * 0.7)
         num_test = len(dataset) - num_training
         trainset, testset = data.random_split(dataset, [num_training, num_test])
-        trainloader = data.DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2)
-        testloader = data.DataLoader(testset, batch_size=4, shuffle=False, num_workers=2)
+        trainset.dataset.transform = train_transform
+        testset.dataset.transform = test_transform
+        trainloader = data.DataLoader(trainset, batch_size=32, shuffle=True, num_workers=2)
+        testloader = data.DataLoader(testset, batch_size=32, shuffle=False, num_workers=2)
 
     torch.save(trainloader, trainloader_path)
     torch.save(testloader, testloader_path)
@@ -134,8 +149,10 @@ if __name__ == '__main__':
     '''
 
     # Define the network, loss function, and optimizer
-    net = Net()
+    net = resnet_with_untrained_fc()
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.003, momentum=0.9)
+    #optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.Adam(net.parameters())
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.3)
 
-    train_model(net, optimizer, criterion, 10)
+    train_model(net, optimizer, criterion, scheduler, 10)

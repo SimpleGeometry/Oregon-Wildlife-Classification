@@ -18,7 +18,7 @@ def testModel():
         
     # Load our trained model
     PATH = 'wild_net.pth'
-    net = model.Net()
+    net = model.resnet_with_untrained_fc()
     net.load_state_dict(torch.load(PATH))
     
     '''
